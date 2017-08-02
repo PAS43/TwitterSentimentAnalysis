@@ -31,7 +31,7 @@ I used a Cuda on a Nvidia 960M it took about 4 hours/ish for 10 epochs of 900,00
 ### Model Info
 
 This model is 79% accurate and has 0.41 loss.
-If you want to use remember to deseralise the Keras tokenier which is the *.p file, the predict.py has an example.
+If you want to use remember to deseralise the Keras tokenier which is the *.p file the tokenizer ahs a 100,000 unique word count, the predict.py has an example.
 Here is a small example of the model output:
 
 | Tweet | Score |
