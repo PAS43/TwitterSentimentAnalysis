@@ -2,8 +2,8 @@
 ---
 ### What is this repo?!
 
-  - A model build for Twitter Sentiment analysis P file and H5 file
-  - The python 3 code to build the above model using Keras & Theano
+  - A model build for Twitter Sentiment analysis, P file and H5 file included
+  - The Python 3 code to build the above model using Keras, Theano & Pandas
 
 I was set the task to try and make a sentiment analysis model for Twitter for my dissertation even though the due by date is long past I still wanted to accomplish this task.
 
@@ -16,7 +16,7 @@ I was set the task to try and make a sentiment analysis model for Twitter for my
 
 ### Dependancies
 
-Dillinger uses a number of open source projects to work properly:
+This model uses a number of open source projects to work properly:
 
 * [Keras] - A Machine Learning Neural Network front end framework
 * [Theano] - A Machine Learning Neural Network back end framework (For Keras)
@@ -34,12 +34,12 @@ This model is 79% accurate and has 0.41 loss.
 If you want to use remember to deseralise the Keras tokenier which is the *.p file, the predict.py has an example.
 Here is a small example of the model output:
 | Tweet | Score |
-|-----|-----|
+|------|-------|
 | "fuck you, you are an asshole"| 0.3316856|
-"I love you"|0.81485116|
-"yes! I cant wait to go"| 0.60499549|
-"I don't want to be here"| 0.11294857
-"is the best person ever" | 0.74768722|
+|"I love you"|0.81485116|
+|"yes! I cant wait to go"| 0.60499549|
+|"I don't want to be here"| 0.11294857
+|"is the best person ever" | 0.74768722|
 
 **Free Software, Hell Yeah!**
 
