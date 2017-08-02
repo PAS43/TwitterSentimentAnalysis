@@ -1,7 +1,6 @@
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from keras.preprocessing.text import Tokenizer
-import numpy as np
 import pandas as pd
 import pickle
 import re
@@ -9,96 +8,107 @@ import re
 """
 amount of samples out to the 1 million to use, my 960m 2GB can only handel
 about 30,000ish at the moment depending on the amount of neurons in the
-deep layer and the amount fo layers.
+deep layer and the amount of layers.
 """
-maxSamples = 20000
+maxSamples = 100000
 
 #Load the CSV and get the correct columns
 data = pd.read_csv("C:\\Users\\Def\\Desktop\\Sentiment Analysis Dataset1.csv")
-dataX = pd.DataFrame()
-dataY = pd.DataFrame()
-dataY[['Sentiment']] = data[['Sentiment']]
-dataX[['SentimentText']] = data[['SentimentText']]
 
-dataY = dataY.iloc[0:maxSamples]
-dataX = dataX.iloc[0:maxSamples]
 
 
 """
-here I filter the data and clean it up but remove @ tags and hyper links and
-also any characters that are not alpha numeric, I then add it to the vec list
+Method NOT USED
+Here I filter the data and clean it up by removing @ tags, hyperlinks and
+also any characters that are not alpha-numeric.
 """
-vec = []
-for x in dataX.iterrows():
-    #Removes Hyperlinks
-    zero = re.sub("(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?", "", x[1].values[0])
-    #Removes @ tags
-    one = re.sub("@\\w+", '', zero)
-    #keeps only alpha-numeric chars
-    two = re.sub("\W+", ' ', one)
-    vec.append(two)
-
-"""
-This loop looks for any Tweets with characthers shorter than 2 and once foudn write the
-index of that Tweet to an array so I can remove from the dataframe of sentiment and the
-list of Tweets later
-"""
-indexOfBlankStrings = []
-for index, string in enumerate(vec):
-    if len(string) < 2:
-        indexOfBlankStrings.append(index)
-
-for index in indexOfBlankStrings:
-    del vec[index]
-
-for row in indexOfBlankStrings:
-    dataY.drop(row, axis=0, inplace=True)
-
-
-"""
-This makes a BOW model out of all the tweets then creates a
-vector for each of the tweets containing all the words from
-the BOW model, each vector is the same size becuase the
-network expects it
-"""
-#Make BOW model and vectorise it
-tokenizer = Tokenizer(lower=False)
-tokenizer.fit_on_texts(vec)
-dim = tokenizer.texts_to_matrix(vec)
-
-"""
-Here im experimenting with multiple layers of the total
-amount of words in the syllabus divided by ^2 - This
-has given me quite accurate results compared to random guess's
-of amount of neron's and amounts of layers.
-"""
-l1 = int(len(dim[0]) / 4) #To big for my GPU
-l2 = int(len(dim[0]) / 8) #To big for my GPU
-l3 = int(len(dim[0]) / 16)
-l4 = int(len(dim[0]) / 32)
-l5 = int(len(dim[0]) / 64)
-l6 = int(len(dim[0]) / 128)
-
+def removeTagsAndLinks(dataframe):
+    for x in dataframe.iterrows():
+        #Removes Hyperlinks
+        x[1].values[0] = re.sub("(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?", "", str(x[1].values[0]))
+        #Removes @ tags
+        x[1].values[0] = re.sub("@\\w+", '', str(x[1].values[0]))
+        #keeps only alpha-numeric chars
+        x[1].values[0] = re.sub("\W+", ' ', str(x[1].values[0]))
+    return dataframe
 
 #Make the model
 model = Sequential()
-model.add(Dense(l4, input_dim=dim.shape[1]))
-model.add(Dense(l5, activation='relu'))
-model.add(Dropout(0.20))
-model.add(Dense(l6, activation='relu'))
+model.add(Dense(1, input_dim=100000))
+model.add(Dense(2, activation='relu'))
+model.add(Dropout(0.1))
+model.add(Dense(2, activation='relu'))
+model.add(Dropout(0.1))
+model.add(Dense(2, activation='relu'))
 model.add(Dense(1, activation='relu'))
 
 #Compile the model
-model.compile(optimizer='RMSProp', loss='binary_crossentropy', metrics=['acc'])
+model.compile(optimizer='RMSprop', loss='binary_crossentropy', metrics=['acc'])
 
-##This runs the model
-history = model.fit(x=dim, y=np.asarray(dataY), epochs=50, validation_split=0.1, shuffle=False)
+"""
+This here will use multiple batches to train the model.
+    startIndex:
+        This is the starting index of the array for which you want to
+        start training the network from.
+    dataRange:
+        The number of elements use to train the network in each batch so
+        since dataRange = 1000 this mean it goes from
+        startIndex...dataRange OR 0...1000
+    amountOfEpochs:
+        This is kinda self explanitory, the more Epochs the more it
+        is supposed to learn AKA updates the optimisation algo numbers
+"""
+
+tokenizer = Tokenizer(lower=False, num_words=100000)
+def getTestGen(data, dataStart=900000, dataEnd=990000):
+    while True:
+        y = data.iloc[:, 1][dataStart:dataEnd]
+        xx = data.iloc[:, 3][dataStart:dataEnd]
+        tokenizer.fit_on_texts(xx)
+        for x in range(len(xx)):
+            yield tokenizer.texts_to_matrix(xx.iloc[x:x+ 1000]), y.iloc[x:x + 1000]
+
+def testGen(data, dataStart=0,dataEnd=10,epoch=10):
+    tar = getTestGen(data=data)
+    tt = 0
+    for e in range(epoch):
+        print("Epoch -- ", e, "\ttt -- ", tt)
+        y = data.iloc[:, 1][dataStart:dataEnd]
+        xx = data.iloc[:, 3][dataStart:dataEnd]
+        tokenizer.fit_on_texts(xx)
+        start = 0
+        jump = 1000
+        for x in range(start, dataEnd, jump):
+            if (x > 0) and (x % 100000 == 0):
+                test_batch = next(tar)
+                h = model.test_on_batch(x=test_batch[0], y=test_batch[1])
+                print("ValLoss: ", h[0], "Val_Acc: ",  h[1], "\n")
+                print("Samples: ", x)
+                yield tokenizer.texts_to_matrix(xx.iloc[x:x + jump]), y.iloc[x:x + jump]
+
+            print("Samples: ", x)
+            yield tokenizer.texts_to_matrix(xx.iloc[x:x + jump]), y.iloc[x:x + jump]
+
+
+
+tgg = testGen(data, dataStart=0, dataEnd=900000, epoch=50)
+a = 0
+
+for features, labels in tgg:
+    h = model.train_on_batch(x=features, y=labels)
+    print("loss: ", h[0], " acc: ", h[1], " - ", "Itteration",a)
+    a += 1
+
+test = getTestGen(data)
+for f, l in test:
+    h = model.test_on_batch(x=f,y=l)
+    print("Features: ",h[0], "Labels",h[1])
+
 
 print("Pickiling BOW model for later predictions")
-##Pickle the Tokenizer so we can load it's word mappings for predictions later
-pickle.dump(tokenizer, open("tokenizerFeatures.p", "wb"))
+pickle.dump(tokenizer, open("tokenizer.p", "wb"))
 print("--BOW Model Saved")
 print("Saving Model")
-##This saves all the weights + biases. Which is basically our model
-model.save("sentiment50EpochsDense27000Samples.h5")
+model.save("900KSamples50Epochs.h5")
 print("--Model Saved")
+

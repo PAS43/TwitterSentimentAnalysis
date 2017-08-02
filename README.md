@@ -7,7 +7,7 @@ The dataset i used is here,
 
 http://thinknook.com/twitter-sentiment-analysis-training-corpus-dataset-2012-09-22/
 
-I ahve onyl really trainned on about 50 epochs each about 15 seconds each with about 30,000 Tweets
+I have only really trainned on about 50 epochs each about 15 seconds each with about 30,000 Tweets
 
 After that my model has about 44% validation accuracy with validation loss of 4.62
 
